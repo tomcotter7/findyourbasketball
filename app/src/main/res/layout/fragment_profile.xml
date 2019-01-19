@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app= "http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".Profile">
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/colorTheme1Button"
+        app:backgroundTint="@color/colorThemeDarkBlue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="90dp"
+        android:layout_marginTop="160dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/colorTheme2Button"
+        app:backgroundTint="@color/colorThemeGreen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="170dp"
+        android:layout_marginTop="160dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/colorTheme3Button"
+        app:backgroundTint="@color/colorPrimary"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="250dp"
+        android:layout_marginTop="160dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/colorTheme4Button"
+        app:backgroundTint="@color/colorThemeRed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="90dp"
+        android:layout_marginTop="240dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/colorTheme5Button"
+        app:backgroundTint="@color/colorThemeTurquoise"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="170dp"
+        android:layout_marginTop="240dp" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/colorTheme6Button"
+        app:backgroundTint="@color/colorThemeYellow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="250dp"
+        android:layout_marginTop="240dp" />
+
+</FrameLayout>
