@@ -21,6 +21,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -43,7 +44,10 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     MapView mMapView;
     String TAG = Home.class.getSimpleName();
-    LatLng ukLocation = new LatLng(51.450665,-0.352142);
+    LatLng ukLocation = new LatLng(51.408150,-0.356942); /*not needed in real application*/
+    LatLng globalLocation = new LatLng(51.405432,-0.544334);
+    double distanceToCourt = 0.02;
+    float zoomToCourt = 14.5f;
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 0;
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationProviderClient;
@@ -177,6 +181,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                 Location location = locationManager.getLastKnownLocation(bestProvider);
                 try {
                     if (location != null) {
+                        globalLocation = new LatLng(location.getLatitude(),location.getLongitude());
                         /*onLocationChange(location); Do this for the real appplication*/
                         testCourtForUkLocation();
 
@@ -190,18 +195,17 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     }
 
-    public void onLocationChange(Location location) {
-        LatLng loc = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.addMarker(new MarkerOptions().position(loc).title("Current Location"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(loc));
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(loc, 16.0f));
+    public void onLocationChange() {
+        mMap.addMarker(new MarkerOptions().position(globalLocation).title("Current Location"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(globalLocation));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, 16.0f));
     }
 
     public void testCourtForUkLocation() {
         mMap.addMarker(new MarkerOptions().position(ukLocation).title("given uk location"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(ukLocation));
-        getCourts(ukLocation);
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(ukLocation, 14.5f));
+        getCourts();
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(ukLocation, zoomToCourt));
     }
 
     public void onProviderDisabled(String provider) {
@@ -217,19 +221,28 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         void onFragmentInteraction(Uri uri);
     }
 
-    private void getCourts(LatLng loc) {
-
+    private void getCourts() {
         CollectionReference courtsRef = firestore.collection("Courts");
-        Query query = courtsRef.whereLessThanOrEqualTo("longitude", loc.longitude + 0.03)
-                .whereGreaterThanOrEqualTo("longitude", loc.longitude - 0.03);
+        Query query = courtsRef.whereLessThanOrEqualTo("longitude", ukLocation.longitude + distanceToCourt)
+                .whereGreaterThanOrEqualTo("longitude", ukLocation.longitude - distanceToCourt);
         query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                int courtCount = 0;
                 if (task.isSuccessful()) {
                     for (QueryDocumentSnapshot document : task.getResult()){
                         Court court = document.toObject(Court.class);
-                        LatLng courtLoc = new LatLng(court.latitude, court.longitude);
-                        mMap.addMarker(new MarkerOptions().position(courtLoc).title(document.getId()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                        if (court.latitude <= ukLocation.latitude + distanceToCourt && court.latitude >= ukLocation.latitude - distanceToCourt) {
+                            courtCount += 1;
+                            LatLng courtLoc = new LatLng(court.latitude, court.longitude);
+                            mMap.addMarker(new MarkerOptions().position(courtLoc).title(document.getId()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                        }
+                    }
+                    if (courtCount < 2){
+                        distanceToCourt += 0.02;
+                        zoomToCourt -= 2f;
+                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(ukLocation, zoomToCourt));
+                        getCourts();
                     }
                 } else {
                     Log.d(TAG, "Error getting documents: ", task.getException());
