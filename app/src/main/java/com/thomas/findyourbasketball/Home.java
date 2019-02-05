@@ -158,9 +158,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         Log.d("TAG", "onMapReady: called");
         mMap = googleMap;
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
     }
 
     public void getLocation(View view) {
@@ -201,7 +198,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     public void testCourtForUkLocation() {
-        mMap.addMarker(new MarkerOptions().position(ukLocation).title("given uk location").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+        mMap.addMarker(new MarkerOptions().position(ukLocation).title("given uk location"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(ukLocation));
         getCourts(ukLocation);
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(ukLocation, 14.5f));
@@ -232,7 +229,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                     for (QueryDocumentSnapshot document : task.getResult()){
                         Court court = document.toObject(Court.class);
                         LatLng courtLoc = new LatLng(court.latitude, court.longitude);
-                        mMap.addMarker(new MarkerOptions().position(courtLoc).title(document.getId()));
+                        mMap.addMarker(new MarkerOptions().position(courtLoc).title(document.getId()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
                     }
                 } else {
                     Log.d(TAG, "Error getting documents: ", task.getException());
