@@ -53,6 +53,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     AutoCompleteTextView autoCompleteTextView;
     float zoomToCourt = 14.5f;
     int attemptedSearches = 0;
+    int courtCount = 0;
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 0;
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationProviderClient;
@@ -200,6 +201,10 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     public void onLocationChange() {
         mMap.addMarker(new MarkerOptions().position(globalLocation).title("Current Location"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(globalLocation));
+        attemptedSearches = 0;
+        courtCount = 0;
+        zoomToCourt = 14.5f;
+        distanceToCourt = 0.02;
         getCourts();
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
     }
@@ -218,7 +223,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                int courtCount = 0;
                 if (task.isSuccessful()) {
                     for (QueryDocumentSnapshot document : task.getResult()){
                         Court court = document.toObject(Court.class);
@@ -229,18 +233,21 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                         }
                     }
                     if (courtCount < 2 && attemptedSearches < 3){
-                        Toast.makeText(getActivity(), "No courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
+                        Log.d(TAG,"Court Count:"+ courtCount + " " + "Attempted Searches:"+ attemptedSearches);
+                        Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
                         attemptedSearches += 1;
                         distanceToCourt += 0.02;
                         zoomToCourt -= 1.7f;
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
                         getCourts();
                     }
+
                 } else {
                     Log.d(TAG, "Error getting documents: ", task.getException());
                 }
             }
         });
-
-
+        if (attemptedSearches == 3 && courtCount == 0) {
+            Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
+        }
     }}
