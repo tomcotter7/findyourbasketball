@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -22,6 +23,9 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -46,17 +50,19 @@ import com.google.firebase.firestore.QuerySnapshot;
 public class Home extends Fragment implements View.OnClickListener,OnMapReadyCallback {
 
     MapView mMapView;
-    PlaceAutocompleteFragment mPlaceAutocomplete;
     String TAG = Home.class.getSimpleName();
-    LatLng globalLocation = new LatLng(51.405432,-0.544334);
+    LatLng globalLocation;
     double distanceToCourt = 0.02;
-    AutoCompleteTextView autoCompleteTextView;
-    float zoomToCourt = 14.5f;
+    float zoomToCourt = 13.5f;
+    private static final int UPDATE_INTERVAL = 50;
+    private static final int FASTEST_INTERVAL = 10;
     int attemptedSearches = 0;
     int courtCount = 0;
-    private static final int MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION = 0;
+    private static final int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0;
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationProviderClient;
+    private LocationCallback mLocationCallback;
+    LocationRequest mLocationRequest;
     FirebaseFirestore firestore = FirebaseFirestore.getInstance();
     FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
             .build();
@@ -95,6 +101,19 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         return fragment;
     }
 
+    private void createLocationCallback(){
+        Log.d(TAG, "createLocationCallback");
+        mLocationCallback = new LocationCallback(){
+            @Override
+            public void onLocationResult(LocationResult locationResult){
+                super.onLocationResult(locationResult);
+
+                globalLocation = new LatLng(locationResult.getLastLocation().getLatitude(),locationResult.getLastLocation().getLongitude());
+
+            }
+        };
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,6 +123,11 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity().getApplicationContext());
+        mLocationRequest = LocationRequest.create();
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationRequest.setInterval(UPDATE_INTERVAL);
+        mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
+        createLocationRequest();
 
     }
 
@@ -163,6 +187,16 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                 break;
         }
     }
+    private void createLocationRequest(){
+        if (ContextCompat.checkSelfPermission( getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // Ask for permission
+            requestPermissions(
+                    new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+        createLocationCallback();
+        mFusedLocationProviderClient.requestLocationUpdates(mLocationRequest,mLocationCallback,null);
+    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -171,11 +205,11 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     public void getLocation(View view) {
-        if (ContextCompat.checkSelfPermission( getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission( getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Ask for permission
             requestPermissions(
-                    new String[] {Manifest.permission.ACCESS_COARSE_LOCATION},
-                    MY_PERMISSIONS_REQUEST_ACCESS_COARSE_LOCATION);
+                    new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
         else {
             // add code here to get Location?
@@ -188,6 +222,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
                                 // Logic to handle location object
+                                Log.d(TAG, ""+location.getLatitude()+","+location.getLongitude());
                                 globalLocation = new LatLng(location.getLatitude(),location.getLongitude());
                                 onLocationChange();
                             }
@@ -198,12 +233,15 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     }
 
+
+
     public void onLocationChange() {
+        mMap.clear();
         mMap.addMarker(new MarkerOptions().position(globalLocation).title("Current Location"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(globalLocation));
         attemptedSearches = 0;
         courtCount = 0;
-        zoomToCourt = 14.5f;
+        zoomToCourt = 13.5f;
         distanceToCourt = 0.02;
         getCourts();
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
@@ -215,6 +253,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
+
 
     private void getCourts() {
         CollectionReference courtsRef = firestore.collection("Courts");
