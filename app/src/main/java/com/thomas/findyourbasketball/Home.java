@@ -52,12 +52,13 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     MapView mMapView;
     String TAG = Home.class.getSimpleName();
     LatLng globalLocation;
+    boolean placeSearched;
     double distanceToCourt = 0.02;
     float zoomToCourt = 13.5f;
     private static final int UPDATE_INTERVAL = 50;
     private static final int FASTEST_INTERVAL = 10;
-    int attemptedSearches = 0;
-    int courtCount = 0;
+    int attemptedSearches;
+    int courtCount;
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0;
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationProviderClient;
@@ -237,7 +238,12 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     public void onLocationChange() {
         mMap.clear();
-        mMap.addMarker(new MarkerOptions().position(globalLocation).title("Current Location"));
+        if (placeSearched = false) {
+            mMap.addMarker(new MarkerOptions().position(globalLocation).title("Current Location"));
+        }
+        else {
+            mMap.addMarker(new MarkerOptions().position(globalLocation)); //Add title for title of the place.
+        }
         mMap.moveCamera(CameraUpdateFactory.newLatLng(globalLocation));
         attemptedSearches = 0;
         courtCount = 0;
@@ -268,7 +274,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                         if (court.latitude <= globalLocation.latitude + distanceToCourt && court.latitude >= globalLocation.latitude - distanceToCourt) {
                             courtCount += 1;
                             LatLng courtLoc = new LatLng(court.latitude, court.longitude);
-                            mMap.addMarker(new MarkerOptions().position(courtLoc).title(document.getId()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                            mMap.addMarker(new MarkerOptions().position(courtLoc).title(court.name).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
                         }
                     }
                     if (courtCount < 2 && attemptedSearches < 3){
