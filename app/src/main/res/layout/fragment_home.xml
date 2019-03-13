@@ -26,14 +26,15 @@
         app:background="@color/colorPrimary"
         app:backgroundTint="@color/colorPrimary" />
 
-    <ImageView
+    <ImageButton
         android:id="@+id/search_icon"
         android:contentDescription="@string/search_icon_accessibility"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:background="@null"
         android:layout_marginTop="@dimen/fab_margin"
         android:layout_marginEnd="@dimen/fab_margin"
         android:layout_gravity="end"
-        android:src="@drawable/places_ic_search" />
+        android:src="@drawable/ic_search_icon" />
 
 </FrameLayout>

@@ -21,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AutoCompleteTextView;
 import android.widget.Toast;
+import android.widget.ImageButton;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -139,7 +140,8 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         View rootView = inflater.inflate(R.layout.fragment_home, container, false);
         FloatingActionButton fab = rootView.findViewById(R.id.locationButton);
         fab.setOnClickListener(this);
-
+        ImageButton searchIcon = rootView.findViewById(R.id.search_icon);
+        searchIcon.setOnClickListener(this);
 
         mMapView = rootView.findViewById(R.id.mapView);
         mMapView.onCreate(savedInstanceState);
@@ -179,12 +181,16 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         mListener = null;
     }
 
+
+
     @Override
     public void onClick(View v) {
-        Log.d(TAG,"onClick running");
         switch (v.getId()) {
             case R.id.locationButton:
                 getLocation(v);
+                break;
+            case R.id.search_icon:
+                Log.d(TAG,"Search icon is gooood!");
                 break;
         }
     }
