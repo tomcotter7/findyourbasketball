@@ -8,6 +8,7 @@ import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -23,6 +24,7 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Toast;
 import android.widget.ImageButton;
 
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -40,12 +42,23 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.widget.Autocomplete;
+import com.google.android.libraries.places.widget.AutocompleteActivity;
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
+import com.google.android.libraries.places.api.Places;
+import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.Arrays;
+import java.util.List;
+
+import javax.net.ssl.SSLEngineResult;
 
 
 public class Home extends Fragment implements View.OnClickListener,OnMapReadyCallback {
@@ -64,6 +77,8 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private LocationCallback mLocationCallback;
+    int AUTOCOMPLETE_REQUEST_CODE = 1;
+    List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG);
     LocationRequest mLocationRequest;
     FirebaseFirestore firestore = FirebaseFirestore.getInstance();
     FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
@@ -130,6 +145,8 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         mLocationRequest.setInterval(UPDATE_INTERVAL);
         mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
         createLocationRequest();
+        Places.initialize(this.getActivity(), getString(R.string.google_api_key));
+
 
     }
 
@@ -181,7 +198,27 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         mListener = null;
     }
 
+    public void onSearchIconClicked() {
+        Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields)
+                .build(this.getActivity());
+        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
+    }
 
+    @Override
+    public void onActivityResult (int requestCode, int resultCode, Intent data){
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE){
+            if (resultCode == AutocompleteActivity.RESULT_OK){
+                Place place = Autocomplete.getPlaceFromIntent(data);
+                Log.i(TAG, "Place:" + place.getName() + "," + place.getId());
+            } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
+                // TODO: Handle the error
+                Status status = Autocomplete.getStatusFromIntent(data);
+                Log.i(TAG, status.getStatusMessage());
+            } else if (resultCode == AutocompleteActivity.RESULT_CANCELED){
+                // The user canceled the operation
+            }
+        }
+    }
 
     @Override
     public void onClick(View v) {
@@ -190,7 +227,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                 getLocation(v);
                 break;
             case R.id.search_icon:
-                Log.d(TAG,"Search icon is gooood!");
+                onSearchIconClicked();
                 break;
         }
     }
