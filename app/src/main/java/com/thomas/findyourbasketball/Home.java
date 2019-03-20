@@ -20,7 +20,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AutoCompleteTextView;
 import android.widget.Toast;
 import android.widget.ImageButton;
 
@@ -30,7 +29,6 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -47,7 +45,6 @@ import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 import com.google.android.libraries.places.api.Places;
-import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
@@ -58,14 +55,13 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.net.ssl.SSLEngineResult;
-
 
 public class Home extends Fragment implements View.OnClickListener,OnMapReadyCallback {
 
     MapView mMapView;
     String TAG = Home.class.getSimpleName();
-    LatLng globalLocation;
+    LatLng currentLocation;
+    LatLng placeLocation;
     boolean placeSearched;
     double distanceToCourt = 0.02;
     float zoomToCourt = 13.5f;
@@ -125,7 +121,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             public void onLocationResult(LocationResult locationResult){
                 super.onLocationResult(locationResult);
 
-                globalLocation = new LatLng(locationResult.getLastLocation().getLatitude(),locationResult.getLastLocation().getLongitude());
+                currentLocation = new LatLng(locationResult.getLastLocation().getLatitude(),locationResult.getLastLocation().getLongitude());
 
             }
         };
@@ -198,6 +194,14 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         mListener = null;
     }
 
+    public void findCourtsAroundLocation(Place place){
+        LatLng placeCoordinates = place.getLatLng();
+        Log.i(TAG, "Place: " + place.getLatLng());
+        placeLocation = placeCoordinates;
+        placeSearched = true;
+        onLocationChange();
+    }
+
     public void onSearchIconClicked() {
         Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields)
                 .build(this.getActivity());
@@ -210,6 +214,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             if (resultCode == AutocompleteActivity.RESULT_OK){
                 Place place = Autocomplete.getPlaceFromIntent(data);
                 Log.i(TAG, "Place:" + place.getName() + "," + place.getId());
+                findCourtsAroundLocation(place);
             } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
                 // TODO: Handle the error
                 Status status = Autocomplete.getStatusFromIntent(data);
@@ -244,7 +249,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        Log.d("TAG", "onMapReady: called");
         mMap = googleMap;
     }
 
@@ -267,7 +271,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                             if (location != null) {
                                 // Logic to handle location object
                                 Log.d(TAG, ""+location.getLatitude()+","+location.getLongitude());
-                                globalLocation = new LatLng(location.getLatitude(),location.getLongitude());
+                                currentLocation = new LatLng(location.getLatitude(),location.getLongitude());
                                 onLocationChange();
                             }
                         }
@@ -280,20 +284,20 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
 
     public void onLocationChange() {
+        LatLng locationNeeded = currentLocation;
+        if (placeSearched) {
+            locationNeeded = placeLocation;
+        }
+
         mMap.clear();
-        if (placeSearched = false) {
-            mMap.addMarker(new MarkerOptions().position(globalLocation).title("Current Location"));
-        }
-        else {
-            mMap.addMarker(new MarkerOptions().position(globalLocation)); //Add title for title of the place.
-        }
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(globalLocation));
+        mMap.addMarker(new MarkerOptions().position(locationNeeded));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(locationNeeded));
         attemptedSearches = 0;
         courtCount = 0;
         zoomToCourt = 13.5f;
         distanceToCourt = 0.02;
-        getCourts();
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
+        getCourts(locationNeeded);
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locationNeeded, zoomToCourt));
     }
 
 
@@ -304,7 +308,8 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
 
-    private void getCourts() {
+    private void getCourts(final LatLng globalLocation) {
+        Log.d(TAG, "getCourts: "+globalLocation);
         CollectionReference courtsRef = firestore.collection("Courts");
         Query query = courtsRef.whereLessThanOrEqualTo("longitude", globalLocation.longitude + distanceToCourt)
                 .whereGreaterThanOrEqualTo("longitude", globalLocation.longitude - distanceToCourt);
@@ -321,13 +326,14 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                         }
                     }
                     if (courtCount < 2 && attemptedSearches < 3){
-                        Log.d(TAG,"Court Count:"+ courtCount + " " + "Attempted Searches:"+ attemptedSearches);
+                        Log.d(TAG,"Court Count:"+ courtCount + " " + "Attempted Searches:"+ attemptedSearches+1);
                         Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
                         attemptedSearches += 1;
                         distanceToCourt += 0.02;
                         zoomToCourt -= 1.7f;
+                        Log.d(TAG, "globalLocation"+globalLocation);
                         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
-                        getCourts();
+                        getCourts(globalLocation);
                     }
 
                 } else {
