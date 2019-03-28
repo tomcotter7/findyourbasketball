@@ -4,15 +4,10 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -209,9 +204,9 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     @Override
-    public void onActivityResult (int requestCode, int resultCode, Intent data){
-        if (requestCode == AUTOCOMPLETE_REQUEST_CODE){
-            if (resultCode == AutocompleteActivity.RESULT_OK){
+    public void onActivityResult (int requestCode, int resultCode, Intent data) {
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == AutocompleteActivity.RESULT_OK) {
                 Place place = Autocomplete.getPlaceFromIntent(data);
                 Log.i(TAG, "Place:" + place.getName() + "," + place.getId());
                 findCourtsAroundLocation(place);
@@ -219,8 +214,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                 // TODO: Handle the error
                 Status status = Autocomplete.getStatusFromIntent(data);
                 Log.i(TAG, status.getStatusMessage());
-            } else if (resultCode == AutocompleteActivity.RESULT_CANCELED){
-                // The user canceled the operation
             }
         }
     }

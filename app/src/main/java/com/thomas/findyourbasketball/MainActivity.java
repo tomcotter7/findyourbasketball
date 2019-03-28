@@ -1,17 +1,8 @@
 package com.thomas.findyourbasketball;
 
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.util.Log;
-import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -28,24 +19,32 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //sets the view to the main activity xml file.
         setContentView(R.layout.activity_main);
+        // sets up the action bar so that you can perform actions on it.
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // sets up the navigation drawer.
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        //This toggle is on the action bar and allows the user to open and close the navigation drawer.
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
+        // sets up the navigation view which is the content inside the navigation drawer.
         NavigationView navigationView = findViewById(R.id.nav_view);
+        //sets up all options within the navigation drawer so that they have a listener and a method can be called off a click.
         navigationView.setNavigationItemSelectedListener(this);
 
+        //the first screen displayed on start-up should be the map, so this function call loads the map fragment into a content frame.
         displaySelectedScreen(R.id.nav_home);
     }
 
     @Override
     public void onBackPressed() {
+        // Closes the drawer if drawer is open and the back button is pressed.
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
@@ -78,14 +77,16 @@ public class MainActivity extends AppCompatActivity
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         displaySelectedScreen(item.getItemId());
         return true;
     }
 
     public void replaceFragment(Fragment fragment, int content_frame) {
+        //replaces the anything in the content frame with the new fragment that is selected.
         if (fragment != null) {
+            // getSupportFragmentManager returns the FragmentManager for interacting with fragments that have been implemented into this activity.
             FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
             ft.replace(content_frame, fragment);
             ft.commit();
@@ -95,7 +96,6 @@ public class MainActivity extends AppCompatActivity
     public void displaySelectedScreen(int itemId) {
         //creating fragment object
         Fragment fragment = null;
-        Fragment nullFragment = null;
 
         //init the fragment object selected
         switch (itemId) {
@@ -112,6 +112,7 @@ public class MainActivity extends AppCompatActivity
 
         replaceFragment(fragment, R.id.content_frame1);
 
+        //closes the drawer once the fragment has been loaded in.
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
     }
