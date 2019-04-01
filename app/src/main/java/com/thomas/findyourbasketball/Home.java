@@ -8,6 +8,7 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
@@ -130,19 +131,22 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity().getApplicationContext());
+
+
+        //Sets up the FusedLocationProviderClient - which allows me to request the users location and location updates.
+        mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity().getApplicationContext());
         mLocationRequest = LocationRequest.create();
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         mLocationRequest.setInterval(UPDATE_INTERVAL);
         mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
         createLocationRequest();
-        Places.initialize(this.getActivity(), getString(R.string.google_api_key));
+        Places.initialize(this.requireActivity(), getString(R.string.google_api_key));
 
 
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View rootView = inflater.inflate(R.layout.fragment_home, container, false);
@@ -157,7 +161,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         mMapView.onResume();
 
         try {
-            MapsInitializer.initialize(getActivity().getApplicationContext());
+            MapsInitializer.initialize(requireActivity().getApplicationContext());
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -166,10 +170,10 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         return rootView;
     }
 
-    public void onViewCreated(View view, Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         //set title for toolbar
-        getActivity().setTitle("Find Your Basketball");
+        requireActivity().setTitle("Find Your Basketball");
     }
 
     @Override
@@ -199,7 +203,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     public void onSearchIconClicked() {
         Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields)
-                .build(this.getActivity());
+                .build(this.requireActivity());
         startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
     }
 
@@ -208,7 +212,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
             if (resultCode == AutocompleteActivity.RESULT_OK) {
                 Place place = Autocomplete.getPlaceFromIntent(data);
-                Log.i(TAG, "Place:" + place.getName() + "," + place.getId());
                 findCourtsAroundLocation(place);
             } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
                 // TODO: Handle the error
@@ -230,7 +233,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         }
     }
     private void createLocationRequest(){
-        if (ContextCompat.checkSelfPermission( getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission( requireActivity().getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Ask for permission
             requestPermissions(
                     new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
@@ -246,7 +249,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     public void getLocation(View view) {
-        if (ContextCompat.checkSelfPermission( getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission( requireActivity().getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Ask for permission
             requestPermissions(
                     new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
@@ -265,6 +268,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                                 // Logic to handle location object
                                 Log.d(TAG, ""+location.getLatitude()+","+location.getLongitude());
                                 currentLocation = new LatLng(location.getLatitude(),location.getLongitude());
+                                placeSearched = false;
                                 onLocationChange();
                             }
                         }
@@ -302,39 +306,42 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
 
     private void getCourts(final LatLng globalLocation) {
-        Log.d(TAG, "getCourts: "+globalLocation);
-        CollectionReference courtsRef = firestore.collection("Courts");
-        Query query = courtsRef.whereLessThanOrEqualTo("longitude", globalLocation.longitude + distanceToCourt)
-                .whereGreaterThanOrEqualTo("longitude", globalLocation.longitude - distanceToCourt);
-        query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                if (task.isSuccessful()) {
-                    for (QueryDocumentSnapshot document : task.getResult()){
-                        Court court = document.toObject(Court.class);
-                        if (court.latitude <= globalLocation.latitude + distanceToCourt && court.latitude >= globalLocation.latitude - distanceToCourt) {
-                            courtCount += 1;
-                            LatLng courtLoc = new LatLng(court.latitude, court.longitude);
-                            mMap.addMarker(new MarkerOptions().position(courtLoc).title(court.name).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
-                        }
-                    }
-                    if (courtCount < 2 && attemptedSearches < 3){
-                        Log.d(TAG,"Court Count:"+ courtCount + " " + "Attempted Searches:"+ attemptedSearches+1);
-                        Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
-                        attemptedSearches += 1;
-                        distanceToCourt += 0.02;
-                        zoomToCourt -= 1.7f;
-                        Log.d(TAG, "globalLocation"+globalLocation);
-                        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
-                        getCourts(globalLocation);
-                    }
+        try {
 
-                } else {
-                    Log.d(TAG, "Error getting documents: ", task.getException());
+
+            CollectionReference courtsRef = firestore.collection("Courts");
+            Query query = courtsRef.whereLessThanOrEqualTo("latitude", globalLocation.latitude + distanceToCourt)
+                    .whereGreaterThanOrEqualTo("latitude", globalLocation.latitude - distanceToCourt);
+            query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                    if (task.isSuccessful()) {
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            Court court = document.toObject(Court.class);
+                            if (court.isNearby(distanceToCourt, globalLocation)) {
+                                courtCount += 1;
+                                mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                            }
+                        }
+                        if (courtCount < 2 && attemptedSearches < 3) {
+                            Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
+                            attemptedSearches += 1;
+                            distanceToCourt += 0.02;
+                            zoomToCourt -= 1.7f;
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
+                            getCourts(globalLocation);
+                        }
+
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
+                    }
                 }
+            });
+            if (attemptedSearches == 3 && courtCount == 0) {
+                Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
             }
-        });
-        if (attemptedSearches == 3 && courtCount == 0) {
-            Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
+        } catch (Exception e){
+            Log.d(TAG, "Error: task.getResult returned null");
         }
-    }}
+    }
+}
