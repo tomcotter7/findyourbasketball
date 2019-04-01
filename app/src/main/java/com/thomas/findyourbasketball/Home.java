@@ -73,16 +73,16 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG);
     LocationRequest mLocationRequest;
     FirebaseFirestore firestore = FirebaseFirestore.getInstance();
+    //sets up fire base so I can retrieve data from it.
     FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
             .build();
 
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+
+    // the fragment initialization parameters
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
@@ -92,15 +92,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment Home.
-     */
-    // TODO: Rename and change types and number of parameters
+
     public static Home newInstance(String param1, String param2) {
         Home fragment = new Home();
         Bundle args = new Bundle();
@@ -110,6 +102,8 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         return fragment;
     }
 
+
+    // This method means that the location stored in the variable currentLocation is updated every time the users location refreshes.
     private void createLocationCallback(){
         Log.d(TAG, "createLocationCallback");
         mLocationCallback = new LocationCallback(){
@@ -133,13 +127,15 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         }
 
 
-        //Sets up the FusedLocationProviderClient - which allows me to request the users location and location updates.
+        // Set up the FusedLocationProviderClient - which allows me to request the users location and location updates.
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(requireActivity().getApplicationContext());
+        // Create a location request - this contains data about the request accuracy and volume which can be used bu the LocationProviderClient.
         mLocationRequest = LocationRequest.create();
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         mLocationRequest.setInterval(UPDATE_INTERVAL);
         mLocationRequest.setFastestInterval(FASTEST_INTERVAL);
         createLocationRequest();
+        // Set up Places - which is how the search bar returns the data.
         Places.initialize(this.requireActivity(), getString(R.string.google_api_key));
 
 
@@ -150,11 +146,13 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View rootView = inflater.inflate(R.layout.fragment_home, container, false);
+        // Set up onClickListeners for both the floating action button and search button.
         FloatingActionButton fab = rootView.findViewById(R.id.locationButton);
         fab.setOnClickListener(this);
         ImageButton searchIcon = rootView.findViewById(R.id.search_icon);
         searchIcon.setOnClickListener(this);
 
+        // Load in the map.
         mMapView = rootView.findViewById(R.id.mapView);
         mMapView.onCreate(savedInstanceState);
 
@@ -172,7 +170,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        //set title for toolbar
+        // Set title for toolbar.
         requireActivity().setTitle("Find Your Basketball");
     }
 
@@ -194,24 +192,29 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     public void findCourtsAroundLocation(Place place){
-        LatLng placeCoordinates = place.getLatLng();
-        Log.i(TAG, "Place: " + place.getLatLng());
-        placeLocation = placeCoordinates;
+        // Get latitude and longitude of given place.
+        // Update placeLocation to be these coordinates.
+        placeLocation = place.getLatLng();
+        //Update placeSearched so that the program knows which location variable to use.
         placeSearched = true;
         onLocationChange();
     }
 
     public void onSearchIconClicked() {
+        // Create an Intent to load up the search bar - .OVERLAY means it loads on top of the previous screen.
         Intent intent = new Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, fields)
                 .build(this.requireActivity());
         startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
     }
 
     @Override
+    // This method runs automatically when the user searches for a location.
     public void onActivityResult (int requestCode, int resultCode, Intent data) {
         if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
+            // If the search worked then.
             if (resultCode == AutocompleteActivity.RESULT_OK) {
                 Place place = Autocomplete.getPlaceFromIntent(data);
+                // Run this method with the place returned from the search.
                 findCourtsAroundLocation(place);
             } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
                 // TODO: Handle the error
@@ -224,14 +227,17 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
+            // If user clicked the Floating Action Button then.
             case R.id.locationButton:
                 getLocation(v);
                 break;
+            // If the user clicked the Search Icon then.
             case R.id.search_icon:
                 onSearchIconClicked();
                 break;
         }
     }
+
     private void createLocationRequest(){
         if (ContextCompat.checkSelfPermission( requireActivity().getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Ask for permission
@@ -240,6 +246,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                     MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
         createLocationCallback();
+        // Set up the location updates with all the provided data.
         mFusedLocationProviderClient.requestLocationUpdates(mLocationRequest,mLocationCallback,null);
     }
 
@@ -256,7 +263,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                     MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
         else {
-            // add code here to get Location?
+            // Set up map.
             mMap.getUiSettings().setZoomControlsEnabled(true);
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             mFusedLocationProviderClient.getLastLocation()
@@ -266,7 +273,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
                                 // Logic to handle location object
-                                Log.d(TAG, ""+location.getLatitude()+","+location.getLongitude());
                                 currentLocation = new LatLng(location.getLatitude(),location.getLongitude());
                                 placeSearched = false;
                                 onLocationChange();
@@ -282,19 +288,20 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
     public void onLocationChange() {
         LatLng locationNeeded = currentLocation;
-        if (placeSearched) {
-            locationNeeded = placeLocation;
-        }
-
+        // if a place has been searched for the locationNeeded should be changed to the placeLocation.
+        if (placeSearched) locationNeeded = placeLocation;
+        // Clear the map of all pins from previous searches.
         mMap.clear();
+        // Add a marker to the location.
         mMap.addMarker(new MarkerOptions().position(locationNeeded));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(locationNeeded));
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locationNeeded, zoomToCourt));
+        // Reset all variables.
         attemptedSearches = 0;
         courtCount = 0;
         zoomToCourt = 13.5f;
         distanceToCourt = 0.02;
         getCourts(locationNeeded);
-        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locationNeeded, zoomToCourt));
     }
 
 
@@ -306,10 +313,11 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
 
     private void getCourts(final LatLng globalLocation) {
+        // This try-catch statement is needed because "task.getResult() may return null - however it would be unlikely.
         try {
-
-
+            // Set up a reference for the Courts collection in my firestore.
             CollectionReference courtsRef = firestore.collection("Courts");
+            // Query for all courts within a latitude band with width 2 * distanceToCourt.
             Query query = courtsRef.whereLessThanOrEqualTo("latitude", globalLocation.latitude + distanceToCourt)
                     .whereGreaterThanOrEqualTo("latitude", globalLocation.latitude - distanceToCourt);
             query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
@@ -317,26 +325,32 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                 public void onComplete(@NonNull Task<QuerySnapshot> task) {
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot document : task.getResult()) {
+                            // Convert the document to a Court object.
                             Court court = document.toObject(Court.class);
                             if (court.isNearby(distanceToCourt, globalLocation)) {
                                 courtCount += 1;
+                                // Add a different style marker to where the court is.
                                 mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
                             }
                         }
+                        // Make sure that enough courts are displayed in the search.
                         if (courtCount < 2 && attemptedSearches < 3) {
                             Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
                             attemptedSearches += 1;
+                            // Increase the box size.
                             distanceToCourt += 0.02;
                             zoomToCourt -= 1.7f;
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
+                            // Rerun the method.
                             getCourts(globalLocation);
                         }
-
+                    // Runs if task is not successful.
                     } else {
                         Log.d(TAG, "Error getting documents: ", task.getException());
                     }
                 }
             });
+            // If no courts have been found within three boxes - the user is told there are no courts nearby.
             if (attemptedSearches == 3 && courtCount == 0) {
                 Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
             }
