@@ -92,7 +92,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         // Required empty public constructor
     }
 
-
     public static Home newInstance(String param1, String param2) {
         Home fragment = new Home();
         Bundle args = new Bundle();
@@ -101,7 +100,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         fragment.setArguments(args);
         return fragment;
     }
-
 
     // This method means that the location stored in the variable currentLocation is updated every time the users location refreshes.
     private void createLocationCallback(){
@@ -285,7 +283,6 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
 
-
     public void onLocationChange() {
         LatLng locationNeeded = currentLocation;
         // if a place has been searched for the locationNeeded should be changed to the placeLocation.
@@ -305,14 +302,14 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
 
-
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 
-
     private void getCourts(final LatLng globalLocation) {
+        // Makes sure that distance to court has not been corrupted anywhere - it must always be positive.
+        distanceToCourt = java.lang.Math.abs(distanceToCourt);
         // This try-catch statement is needed because "task.getResult() may return null - however it would be unlikely.
         try {
             // Set up a reference for the Courts collection in my firestore.
