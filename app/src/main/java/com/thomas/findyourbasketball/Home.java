@@ -308,6 +308,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     private void getCourts(final LatLng globalLocation) {
+        attemptedSearches += 1;
         // Makes sure that distance to court has not been corrupted anywhere - it must always be positive.
         distanceToCourt = java.lang.Math.abs(distanceToCourt);
         // This try-catch statement is needed because "task.getResult() may return null - however it would be unlikely.
@@ -325,6 +326,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                             // Convert the document to a Court object.
                             Court court = document.toObject(Court.class);
                             if (court.isNearby(distanceToCourt, globalLocation)) {
+                                Log.d(TAG, "Court Name:" +court.getName());
                                 courtCount += 1;
                                 // Add a different style marker to where the court is.
                                 mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
@@ -333,10 +335,9 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                         // Make sure that enough courts are displayed in the search.
                         if (courtCount < 2 && attemptedSearches < 3) {
                             Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
-                            attemptedSearches += 1;
                             // Increase the box size.
                             distanceToCourt += 0.02;
-                            zoomToCourt -= 1.7f;
+                            zoomToCourt -= 1.2f;
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
                             // Rerun the method.
                             getCourts(globalLocation);
