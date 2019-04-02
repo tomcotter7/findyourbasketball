@@ -16,6 +16,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ImageButton;
 
@@ -59,6 +60,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     LatLng currentLocation;
     LatLng placeLocation;
     boolean placeSearched;
+    String placeName;
     double distanceToCourt = 0.02;
     float zoomToCourt = 13.5f;
     private static final int UPDATE_INTERVAL = 50;
@@ -193,6 +195,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         // Get latitude and longitude of given place.
         // Update placeLocation to be these coordinates.
         placeLocation = place.getLatLng();
+        placeName = place.getName();
         //Update placeSearched so that the program knows which location variable to use.
         placeSearched = true;
         onLocationChange();
@@ -301,6 +304,12 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         getCourts(locationNeeded);
     }
 
+    public void methodFailure() {
+        Toast.makeText(getActivity(),"There has been some corruption in the data", Toast.LENGTH_LONG).show();
+        LatLng centre = new LatLng(0,0);
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(centre,0.5f));
+        mMap.clear();
+    }
 
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
@@ -310,7 +319,10 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     private void getCourts(final LatLng globalLocation) {
         attemptedSearches += 1;
         // Makes sure that distance to court has not been corrupted anywhere - it must always be positive.
-        distanceToCourt = java.lang.Math.abs(distanceToCourt);
+        if (distanceToCourt < 0) {
+            methodFailure();
+            return;
+        }
         // This try-catch statement is needed because "task.getResult() may return null - however it would be unlikely.
         try {
             // Set up a reference for the Courts collection in my firestore.
@@ -350,7 +362,11 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             });
             // If no courts have been found within three boxes - the user is told there are no courts nearby.
             if (attemptedSearches == 3 && courtCount == 0) {
-                Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
+                if (!placeSearched) {
+                    Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getActivity(), "No courts found near "+ placeName, Toast.LENGTH_LONG).show();
+                }
             }
         } catch (Exception e){
             Log.d(TAG, "Error: task.getResult returned null");
