@@ -15,7 +15,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, Home.OnFragmentInteractionListener, Profile.OnFragmentInteractionListener {
+        implements NavigationView.OnNavigationItemSelectedListener, Home.OnFragmentInteractionListener, Profile.OnFragmentInteractionListener, MyCourts.OnFragmentInteractionListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,6 +104,9 @@ public class MainActivity extends AppCompatActivity
                 break;
             case R.id.nav_profile:
                 fragment = new Profile();
+                break;
+            case R.id.nav_courts:
+                fragment = new MyCourts();
                 break;
 
         }
