@@ -1,30 +1,22 @@
 package com.thomas.findyourbasketball;
 
-import android.content.Context;
-import android.location.Address;
-import android.location.Geocoder;
-
-import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
 
 public class Court {
 
-    private String TAG = Court.class.getSimpleName();
     private String name;
     private double latitude;
     private double longitude;
-    private Context context;
+    private String address;
 
-    public Court(String nameInput, double lat, double lng /**Context contextInput**/) {
+    public Court(String nameInput, double lat, double lng) {
+        LatLng validLatLng = new LatLng(lat,lng);
         this.name = nameInput;
-        this.latitude = new LatLng(lat,lng).latitude;
-        this.longitude = new LatLng(lat,lng).longitude;
-        //this.context = contextInput;
+        this.latitude = validLatLng.latitude;
+        this.longitude = validLatLng.longitude;
     }
 
     // A getter for the latitude.
@@ -47,7 +39,9 @@ public class Court {
         return new LatLng(this.getLatitude(), this.getLongitude());
     }
 
-    public boolean isNearby(double distance, LatLng globalLocation) {
+
+    // This method only tests if the court is nearby by longitude - latitude is tested in a different class.
+    public boolean isNearbyLng(double distance, LatLng globalLocation) {
         // Set up the longitudinal lines which the court must be inside.
         double boxLeft = globalLocation.longitude - distance;
         double boxRight = globalLocation.longitude + distance;
@@ -72,21 +66,23 @@ public class Court {
         return result;
     }
 
-    /**public String getAddress() {
-        Geocoder geocoder = new Geocoder(context, Locale.getDefault());
-        String postalCode = null;
-        try {
-            List<Address> addresses = geocoder.getFromLocation(this.getLatitude(), this.getLongitude(), 1);
-            if (addresses != null) {
-                postalCode = addresses.get(0).getPostalCode();
-            }
 
-        } catch (IOException ioException) {
-            Log.e(TAG, "Error +"+ ioException);
+    //A getter for the courts address.
+    public String getAddress() {
+        String tempAddress = "null";
+        if (this.address != null) {
+            tempAddress = this.address;
         }
-        return postalCode;
-    }**/
+        return tempAddress;
+    }
 
+
+    // A setter for the courts address.
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    // Returns the court data in a easy to read format.
     public String toString(){
         return String.format(Locale.ENGLISH, "%s [%f,%f]",
                 this.name,this.latitude,this.longitude);

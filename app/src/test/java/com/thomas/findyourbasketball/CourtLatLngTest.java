@@ -52,6 +52,8 @@ public class CourtLatLngTest {
         Court court = new Court(name, input_lat, input_lng);
         System.out.println("Court params: " + court.toString());
         System.out.println("Expected:["+ name +  ", " + expected_lat + ", " + expected_lng + "]");
+        System.out.println("Actual:["+court.getName()+", "+court.getLatitude()+", "+court.getLongitude()+"]");
+        System.out.println("-----------------------------------------");
         assertEquals(name, court.getName());
         assertEquals(expected_lat, court.getLatitude(),0.0);
         assertEquals(expected_lng, court.getLongitude(),0.0);

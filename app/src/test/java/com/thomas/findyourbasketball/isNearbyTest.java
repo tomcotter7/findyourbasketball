@@ -55,9 +55,11 @@ public class isNearbyTest {
     @Test
     public void testCourt_isNearby(){
         Court court = new Court(name, input_lat, input_lng);
-        System.out.println("Court params: " + court.toString());
-        System.out.println("Expected:["+ name +  ", " + expected_is_nearby);
+        System.out.println("Court params: " + court.toString() +", "+ "[GlobalLocation, Distance] = ["+global_location+", "+distance+"]" );
+        System.out.println("Expected:["+ name +  ", " + expected_is_nearby+"]");
+        System.out.println("Actual:["+name+", "+court.isNearbyLng(distance, global_location)+"]");
+        System.out.println("---------------------------------------");
         assertEquals(name, court.getName());
-        assertEquals(expected_is_nearby, court.isNearby(distance,global_location));
+        assertEquals(expected_is_nearby, court.isNearbyLng(distance,global_location));
     }
 }

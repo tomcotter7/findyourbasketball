@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -49,8 +51,10 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 
 public class Home extends Fragment implements View.OnClickListener,OnMapReadyCallback {
@@ -323,7 +327,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             methodFailure();
             return;
         }
-        // This try-catch statement is needed because "task.getResult() may return null - however it would be unlikely.
+        // This try-catch statement is needed because "task.getResult()" may return null - however it would be unlikely.
         try {
             // Set up a reference for the Courts collection in my firestore.
             CollectionReference courtsRef = firestore.collection("Courts");
@@ -336,12 +340,13 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             // Convert the document to a Court object.
-                            Court court = new Court(document.getString("name"), document.getDouble("latitude"), document.getDouble("longitude")/**,requireActivity().getApplicationContext()**/);
-                            if (court.isNearby(distanceToCourt, globalLocation)) {
+                            Court court = new Court(document.getString("name"), document.getDouble("latitude"), document.getDouble("longitude"));
+                            court.setAddress(getAddress(court.getLatitude(),court.getLongitude()));
+                            if (court.isNearbyLng(distanceToCourt, globalLocation)) {
                                 Log.d(TAG, "Court Name:" +court.getName());
                                 courtCount += 1;
                                 // Add a different style marker to where the court is.
-                                mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName())./**snippet(court.getAddress()).**/icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                                mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).snippet(court.getAddress()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
                             }
                         }
                         // Make sure that enough courts are displayed in the search.
@@ -372,4 +377,20 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             Log.d(TAG, "Error: task.getResult returned null");
         }
     }
+
+    public String getAddress(double lat, double lng) {
+        Geocoder geocoder = new Geocoder(requireActivity().getApplicationContext(), Locale.getDefault());
+        String postalCode = null;
+        try {
+            List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
+            if (addresses != null) {
+                postalCode = addresses.get(0).getPostalCode();
+            }
+
+        } catch (IOException ioException) {
+            Log.e(TAG, "Error +"+ ioException);
+        }
+        return postalCode;
+    }
+
 }
