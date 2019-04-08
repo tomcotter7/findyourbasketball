@@ -299,7 +299,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         // Reset all variables.
         attemptedSearches = 0;
         courtCount = 0;
-        zoomToCourt = 13.5f;
+        zoomToCourt = 13.3f;
         distanceToCourt = 0.02;
         getCourts(locationNeeded);
     }
@@ -336,12 +336,12 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                     if (task.isSuccessful()) {
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             // Convert the document to a Court object.
-                            Court court = document.toObject(Court.class);
+                            Court court = new Court(document.getString("name"), document.getDouble("latitude"), document.getDouble("longitude")/**,requireActivity().getApplicationContext()**/);
                             if (court.isNearby(distanceToCourt, globalLocation)) {
                                 Log.d(TAG, "Court Name:" +court.getName());
                                 courtCount += 1;
                                 // Add a different style marker to where the court is.
-                                mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                                mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName())./**snippet(court.getAddress()).**/icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
                             }
                         }
                         // Make sure that enough courts are displayed in the search.
@@ -349,7 +349,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                             Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
                             // Increase the box size.
                             distanceToCourt += 0.02;
-                            zoomToCourt -= 1.2f;
+                            zoomToCourt -= 1.3f;
                             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
                             // Rerun the method.
                             getCourts(globalLocation);

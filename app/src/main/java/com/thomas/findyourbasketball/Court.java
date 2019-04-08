@@ -1,11 +1,31 @@
 package com.thomas.findyourbasketball;
 
+import android.content.Context;
+import android.location.Address;
+import android.location.Geocoder;
+
+import android.util.Log;
+
 import com.google.android.gms.maps.model.LatLng;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+
 public class Court {
+
+    private String TAG = Court.class.getSimpleName();
     private String name;
     private double latitude;
     private double longitude;
+    private Context context;
+
+    public Court(String nameInput, double lat, double lng /**Context contextInput**/) {
+        this.name = nameInput;
+        this.latitude = new LatLng(lat,lng).latitude;
+        this.longitude = new LatLng(lat,lng).longitude;
+        //this.context = contextInput;
+    }
 
     // A getter for the latitude.
     public double getLatitude() {
@@ -51,4 +71,25 @@ public class Court {
         }
         return result;
     }
+
+    /**public String getAddress() {
+        Geocoder geocoder = new Geocoder(context, Locale.getDefault());
+        String postalCode = null;
+        try {
+            List<Address> addresses = geocoder.getFromLocation(this.getLatitude(), this.getLongitude(), 1);
+            if (addresses != null) {
+                postalCode = addresses.get(0).getPostalCode();
+            }
+
+        } catch (IOException ioException) {
+            Log.e(TAG, "Error +"+ ioException);
+        }
+        return postalCode;
+    }**/
+
+    public String toString(){
+        return String.format(Locale.ENGLISH, "%s [%f,%f]",
+                this.name,this.latitude,this.longitude);
+    }
+
 }
