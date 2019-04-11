@@ -68,7 +68,7 @@ public class Court {
 
 
     //A getter for the courts address.
-    public String getAddress() {
+    public String gettterAddress() {
         String tempAddress = "null";
         if (this.address != null) {
             tempAddress = this.address;

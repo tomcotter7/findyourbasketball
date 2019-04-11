@@ -327,68 +327,70 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             methodFailure();
             return;
         }
-        // This try-catch statement is needed because "task.getResult()" may return null - however it would be unlikely.
+            // This try-catch statement is needed because "task.getResult()" may return null - however it would be unlikely.
         try {
-            // Set up a reference for the Courts collection in my firestore.
-            CollectionReference courtsRef = firestore.collection("Courts");
-            // Query for all courts within a latitude band with width 2 * distanceToCourt.
-            Query query = courtsRef.whereLessThanOrEqualTo("latitude", globalLocation.latitude + distanceToCourt)
-                    .whereGreaterThanOrEqualTo("latitude", globalLocation.latitude - distanceToCourt);
-            query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                @Override
-                public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                    if (task.isSuccessful()) {
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            // Convert the document to a Court object.
-                            Court court = new Court(document.getString("name"), document.getDouble("latitude"), document.getDouble("longitude"));
-                            court.setAddress(getAddress(court.getLatitude(),court.getLongitude()));
-                            if (court.isNearbyLng(distanceToCourt, globalLocation)) {
-                                Log.d(TAG, "Court Name:" +court.getName());
-                                courtCount += 1;
-                                // Add a different style marker to where the court is.
-                                mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).snippet(court.getAddress()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                // Set up a reference for the Courts collection in my firestore.
+                CollectionReference courtsRef = firestore.collection("Courts");
+                // Query for all courts within a latitude band with width 2 * distanceToCourt.
+                Log.d(TAG, "Location:" + globalLocation.latitude + "/BoxSize:" + distanceToCourt + "/AttemptedSearches:" + attemptedSearches);
+                Query query = courtsRef.whereLessThanOrEqualTo("latitude", globalLocation.latitude + distanceToCourt)
+                        .whereGreaterThanOrEqualTo("latitude", globalLocation.latitude - distanceToCourt);
+                query.get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                // Convert the document to a Court object.
+                                Court court = new Court(document.getString("name"), document.getDouble("latitude"), document.getDouble("longitude"));
+                                // Set the court postal code received from Geocoder to that courts address.
+                                court.setAddress(getAddress(court.getLatitude(), court.getLongitude()));
+                                if (court.isNearbyLng(distanceToCourt, globalLocation)) {
+                                    courtCount += 1;
+                                    // Add a different style marker to where the court is.
+                                    mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).snippet(court.gettterAddress()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
+                                }
                             }
+                            //If no courts have been found within three attempted searches - tell the user.
+                            if (attemptedSearches == 3 && courtCount == 0) {
+                                if (!placeSearched) {
+                                    Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
+                                } else {
+                                    Toast.makeText(getActivity(), "No courts found near "+ placeName, Toast.LENGTH_LONG).show();
+                                }
+                            }
+                            // Make sure that enough courts are displayed in the search.
+                            if (courtCount < 2 && attemptedSearches < 3) {
+                                Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
+                                // Increase the box size.
+                                distanceToCourt += 0.02;
+                                zoomToCourt -= 1.3f;
+                                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
+                                // Rerun the method.
+                                getCourts(globalLocation);
+                            }
+                            // Runs if task is not successful.
+                        } else {
+                            Log.d(TAG, "Error getting documents: ", task.getException());
                         }
-                        // Make sure that enough courts are displayed in the search.
-                        if (courtCount < 2 && attemptedSearches < 3) {
-                            Toast.makeText(getActivity(), "Not many courts found nearby, looking further away.", Toast.LENGTH_SHORT).show();
-                            // Increase the box size.
-                            distanceToCourt += 0.02;
-                            zoomToCourt -= 1.3f;
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
-                            // Rerun the method.
-                            getCourts(globalLocation);
-                        }
-                    // Runs if task is not successful.
-                    } else {
-                        Log.d(TAG, "Error getting documents: ", task.getException());
                     }
-                }
-            });
-            // If no courts have been found within three boxes - the user is told there are no courts nearby.
-            if (attemptedSearches == 3 && courtCount == 0) {
-                if (!placeSearched) {
-                    Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(getActivity(), "No courts found near "+ placeName, Toast.LENGTH_LONG).show();
-                }
+                });
+            } catch (Exception e) {
+                Log.d(TAG, "Error: task.getResult returned null");
             }
-        } catch (Exception e){
-            Log.d(TAG, "Error: task.getResult returned null");
-        }
     }
 
+    //Get a postal code from a latitude, longitude.
     public String getAddress(double lat, double lng) {
         Geocoder geocoder = new Geocoder(requireActivity().getApplicationContext(), Locale.getDefault());
-        String postalCode = null;
+        String postalCode = "No address";
         try {
             List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
             if (addresses != null) {
                 postalCode = addresses.get(0).getPostalCode();
             }
 
-        } catch (IOException ioException) {
-            Log.e(TAG, "Error +"+ ioException);
+        } catch (Exception e) {
+            Log.e(TAG, "Error +"+ e);
         }
         return postalCode;
     }
