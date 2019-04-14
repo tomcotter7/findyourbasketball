@@ -13,7 +13,7 @@ public class Court {
     private String address;
 
     public Court(String nameInput, double lat, double lng) {
-        LatLng validLatLng = new LatLng(lat,lng);
+        LatLng validLatLng = new LatLng(lat, lng);
         this.name = nameInput;
         this.latitude = validLatLng.latitude;
         this.longitude = validLatLng.longitude;
@@ -68,7 +68,7 @@ public class Court {
 
 
     //A getter for the courts address.
-    public String gettterAddress() {
+    public String getterAddress() {
         String tempAddress = "null";
         if (this.address != null) {
             tempAddress = this.address;
@@ -83,9 +83,18 @@ public class Court {
     }
 
     // Returns the court data in a easy to read format.
-    public String toString(){
+    public String toString() {
         return String.format(Locale.ENGLISH, "%s [%f,%f]",
-                this.name,this.latitude,this.longitude);
+                this.name, this.latitude, this.longitude);
     }
 
+    public double findDistanceToCourt(LatLng myLocation) {
+        double latitudeDistance = java.lang.Math.abs(myLocation.latitude - this.latitude);
+        double longitudeDistance = java.lang.Math.abs(myLocation.longitude - this.longitude);
+        if (latitudeDistance > longitudeDistance) {
+            return latitudeDistance;
+        } else {
+            return longitudeDistance;
+        }
+    }
 }

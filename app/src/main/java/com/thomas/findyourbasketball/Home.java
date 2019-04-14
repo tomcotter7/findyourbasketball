@@ -52,9 +52,12 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+
 
 
 public class Home extends Fragment implements View.OnClickListener,OnMapReadyCallback {
@@ -63,14 +66,14 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     String TAG = Home.class.getSimpleName();
     LatLng currentLocation;
     LatLng placeLocation;
+    int attemptedSearches;
+    double distanceToCourt;
+    int courtCount;
     boolean placeSearched;
     String placeName;
-    double distanceToCourt = 0.02;
     float zoomToCourt = 13.5f;
     private static final int UPDATE_INTERVAL = 50;
     private static final int FASTEST_INTERVAL = 10;
-    int attemptedSearches;
-    int courtCount;
     private static final int MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0;
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationProviderClient;
@@ -300,11 +303,11 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         mMap.addMarker(new MarkerOptions().position(locationNeeded));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(locationNeeded));
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locationNeeded, zoomToCourt));
-        // Reset all variables.
-        attemptedSearches = 0;
-        courtCount = 0;
+        // Reset all variables
         zoomToCourt = 13.3f;
+        courtCount = 0;
         distanceToCourt = 0.02;
+        attemptedSearches = 0;
         getCourts(locationNeeded);
     }
 
@@ -319,6 +322,9 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
+
+
+
 
     private void getCourts(final LatLng globalLocation) {
         attemptedSearches += 1;
@@ -342,20 +348,13 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 // Convert the document to a Court object.
                                 Court court = new Court(document.getString("name"), document.getDouble("latitude"), document.getDouble("longitude"));
-                                // Set the court postal code received from Geocoder to that courts address.
-                                court.setAddress(getAddress(court.getLatitude(), court.getLongitude()));
                                 if (court.isNearbyLng(distanceToCourt, globalLocation)) {
+                                    // Set the court postal code received from Geocoder to that courts address.
+                                    court.setAddress(getAddress(court.getLatitude(), court.getLongitude()));
+                                    // Add one to court count.
                                     courtCount += 1;
                                     // Add a different style marker to where the court is.
-                                    mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).snippet(court.gettterAddress()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
-                                }
-                            }
-                            //If no courts have been found within three attempted searches - tell the user.
-                            if (attemptedSearches == 3 && courtCount == 0) {
-                                if (!placeSearched) {
-                                    Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
-                                } else {
-                                    Toast.makeText(getActivity(), "No courts found near "+ placeName, Toast.LENGTH_LONG).show();
+                                    mMap.addMarker(new MarkerOptions().position(court.getLatLng()).title(court.getName()).snippet(court.getterAddress()).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_map_pin)));
                                 }
                             }
                             // Make sure that enough courts are displayed in the search.
@@ -367,6 +366,15 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                                 mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(globalLocation, zoomToCourt));
                                 // Rerun the method.
                                 getCourts(globalLocation);
+                            }
+
+                            //If no courts have been found within three attempted searches - tell the user.
+                            if (attemptedSearches == 3 && courtCount == 0) {
+                                if (!placeSearched) {
+                                    Toast.makeText(getActivity(), "No courts found nearby, try searching for your local town.", Toast.LENGTH_LONG).show();
+                                } else {
+                                    Toast.makeText(getActivity(), "No courts found near "+ placeName, Toast.LENGTH_LONG).show();
+                                }
                             }
                             // Runs if task is not successful.
                         } else {
