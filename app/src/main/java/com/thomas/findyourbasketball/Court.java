@@ -88,13 +88,4 @@ public class Court {
                 this.name, this.latitude, this.longitude);
     }
 
-    public double findDistanceToCourt(LatLng myLocation) {
-        double latitudeDistance = java.lang.Math.abs(myLocation.latitude - this.latitude);
-        double longitudeDistance = java.lang.Math.abs(myLocation.longitude - this.longitude);
-        if (latitudeDistance > longitudeDistance) {
-            return latitudeDistance;
-        } else {
-            return longitudeDistance;
-        }
-    }
 }

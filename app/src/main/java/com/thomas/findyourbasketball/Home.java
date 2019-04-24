@@ -51,9 +51,6 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
-import java.io.IOException;
-import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -117,7 +114,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
             @Override
             public void onLocationResult(LocationResult locationResult){
                 super.onLocationResult(locationResult);
-
+                // Update the users current location.
                 currentLocation = new LatLng(locationResult.getLastLocation().getLatitude(),locationResult.getLastLocation().getLongitude());
 
             }
@@ -151,7 +148,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+        // Inflate the layout for this fragment.
         View rootView = inflater.inflate(R.layout.fragment_home, container, false);
         // Set up onClickListeners for both the floating action button and search button.
         FloatingActionButton fab = rootView.findViewById(R.id.locationButton);
@@ -225,7 +222,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                 // Run this method with the place returned from the search.
                 findCourtsAroundLocation(place);
             } else if (resultCode == AutocompleteActivity.RESULT_ERROR) {
-                // TODO: Handle the error
+                // Search failed, show status.
                 Status status = Autocomplete.getStatusFromIntent(data);
                 Log.i(TAG, status.getStatusMessage());
             }
@@ -247,12 +244,14 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     private void createLocationRequest(){
+        // If the user has not allowed the application to access their location then.
         if (ContextCompat.checkSelfPermission( requireActivity().getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Ask for permission
             requestPermissions(
                     new String[] {Manifest.permission.ACCESS_FINE_LOCATION},
                     MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
+        // Update users location regularly.
         createLocationCallback();
         // Set up the location updates with all the provided data.
         mFusedLocationProviderClient.requestLocationUpdates(mLocationRequest,mLocationCallback,null);
@@ -264,6 +263,8 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
     }
 
     public void getLocation(View view) {
+        // If the user has not allowed the application to access their location then.
+        // Do this twice because you have to request this every time you ask for a location.
         if (ContextCompat.checkSelfPermission( requireActivity().getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // Ask for permission
             requestPermissions(
@@ -280,8 +281,9 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
                         public void onSuccess(Location location) {
                             // Got last known location. In some rare situations this can be null.
                             if (location != null) {
-                                // Logic to handle location object
+                                // Logic to handle location object.
                                 currentLocation = new LatLng(location.getLatitude(),location.getLongitude());
+                                // Set placeSearched = False, so the onLocationChange() knows which variable to use.
                                 placeSearched = false;
                                 onLocationChange();
                             }
@@ -308,18 +310,20 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         courtCount = 0;
         distanceToCourt = 0.02;
         attemptedSearches = 0;
+        // Run method to find courts in this area.
         getCourts(locationNeeded);
     }
 
     public void methodFailure() {
+        // Tell the user the method has failed.
         Toast.makeText(getActivity(),"There has been some corruption in the data", Toast.LENGTH_LONG).show();
+        // Reset the map.
         LatLng centre = new LatLng(0,0);
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(centre,0.5f));
         mMap.clear();
     }
 
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 
@@ -327,6 +331,7 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
 
 
     private void getCourts(final LatLng globalLocation) {
+        // Add one to attemptedSearches - it starts on zero so this works.
         attemptedSearches += 1;
         // Makes sure that distance to court has not been corrupted anywhere - it must always be positive.
         if (distanceToCourt < 0) {
@@ -392,8 +397,10 @@ public class Home extends Fragment implements View.OnClickListener,OnMapReadyCal
         Geocoder geocoder = new Geocoder(requireActivity().getApplicationContext(), Locale.getDefault());
         String postalCode = "No address";
         try {
+            // Get a list of addresses nearest the lat,lng from the Geocoder API.
             List<Address> addresses = geocoder.getFromLocation(lat, lng, 1);
             if (addresses != null) {
+                // The first address is closest address to the lat,lng
                 postalCode = addresses.get(0).getPostalCode();
             }
 
